@@ -1,0 +1,73 @@
+name: Deploy to AWS Lambda (Docker/ECR)
+
+on:
+  push:
+    branches:
+      - main     # Deploy on pushes to main (including PR merges)
+  workflow_dispatch: # Allow manual triggers from the GitHub Actions UI
+
+# Define environment variables used throughout the workflow
+env:
+  AWS_REGION: us-east-1                  # Update to your preferred AWS region
+  ECR_REPOSITORY: my-lambda-backend      # Must match the ECR repository name you created
+  LAMBDA_FUNCTION_NAME: my-react-backend # Must match your Lambda Function name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    # We need permission to get an OIDC token to authenticate with AWS
+    # This is the modern, secure way (no long-lived access keys!)
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # IMPORTANT: If you want to use long-lived Access Keys instead of OIDC, 
+      # replace this step with the standard aws-actions/configure-aws-credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Note: Set these as secrets in your GitHub repository
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }} # Use the Git commit SHA as the unique Docker tag
+        run: |
+          # Build a docker container and push it to ECR so that it can be deployed to Lambda.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+          # We also tag it as 'latest' for convenience
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          # output the image URI to be used in the next step
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update AWS Lambda Function with new Image
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image_uri }}
+        run: |
+          # Assuming the Lambda function is already created mapping to the ECR repo.
+          # This command only updates the code using the new image digest
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --image-uri $IMAGE_URI \
+            --region ${{ env.AWS_REGION }}
+            
+          # Wait for the update to complete (Lambda takes a few seconds to process new images)
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
