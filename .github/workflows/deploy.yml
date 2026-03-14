@@ -44,30 +44,62 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }} # Use the Git commit SHA as the unique Docker tag
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Build a docker container and push it to ECR so that it can be deployed to Lambda.
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          # Check if ECR repository exists, create it if it doesn't
+          if ! aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "Repository ${{ env.ECR_REPOSITORY }} not found. Creating..."
+            aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }}
+          else
+            echo "Repository ${{ env.ECR_REPOSITORY }} already exists."
+          fi
+
+          # Build a docker container and push it to ECR
+          docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
           
           # We also tag it as 'latest' for convenience
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker tag $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
           
           # output the image URI to be used in the next step
-          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_uri=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Update AWS Lambda Function with new Image
+      - name: Create or Update AWS Lambda Function
         env:
           IMAGE_URI: ${{ steps.build-image.outputs.image_uri }}
+          LAMBDA_ROLE_ARN: ${{ secrets.LAMBDA_ROLE_ARN }} # MUST BE SET IN GITHUB SECRETS
         run: |
-          # Assuming the Lambda function is already created mapping to the ECR repo.
-          # This command only updates the code using the new image digest
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --image-uri $IMAGE_URI \
-            --region ${{ env.AWS_REGION }}
+          # Check if the Lambda function already exists
+          if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_NAME }} --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "Lambda function ${{ env.LAMBDA_FUNCTION_NAME }} not found. Creating..."
             
-          # Wait for the update to complete (Lambda takes a few seconds to process new images)
-          aws lambda wait function-updated \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+            if [ -z "$LAMBDA_ROLE_ARN" ]; then
+              echo "Error: LAMBDA_ROLE_ARN secret is missing. Cannot create new Lambda function without an Execution Role."
+              exit 1
+            fi
+
+            aws lambda create-function \
+              --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+              --package-type Image \
+              --code ImageUri=$IMAGE_URI \
+              --role $LAMBDA_ROLE_ARN \
+              --region ${{ env.AWS_REGION }} \
+              --timeout 30 \
+              --memory-size 128
+              
+            # Wait for creation to finalize
+            aws lambda wait function-active-v2 --function-name ${{ env.LAMBDA_FUNCTION_NAME }} --region ${{ env.AWS_REGION }}
+          else
+            echo "Lambda function ${{ env.LAMBDA_FUNCTION_NAME }} exists. Updating code..."
+            
+            aws lambda update-function-code \
+              --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+              --image-uri $IMAGE_URI \
+              --region ${{ env.AWS_REGION }}
+              
+            # Wait for the update to complete
+            aws lambda wait function-updated \
+              --function-name ${{ env.LAMBDA_FUNCTION_NAME }} --region ${{ env.AWS_REGION }}
+          fi
+
