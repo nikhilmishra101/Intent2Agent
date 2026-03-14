@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "photoURL": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Search": {
+      "title": "Search",
+      "description": "User search history",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "query", "timestamp"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "User purchase history",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "itemName": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "itemName", "category", "date", "price", "timestamp"]
+    },
+    "Card": {
+      "title": "Card",
+      "description": "User saved cards",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "cardName": {
+          "type": "string"
+        },
+        "last4": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "isPrimary": {
+          "type": "boolean"
+        },
+        "aiInsight": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "cardName", "last4", "network", "isPrimary", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "User profiles"
+    },
+    "/searches/{searchId}": {
+      "schema": {
+        "$ref": "#/entities/Search"
+      },
+      "description": "User searches"
+    },
+    "/purchases/{purchaseId}": {
+      "schema": {
+        "$ref": "#/entities/Purchase"
+      },
+      "description": "User purchases"
+    },
+    "/cards/{cardId}": {
+      "schema": {
+        "$ref": "#/entities/Card"
+      },
+      "description": "User saved cards"
+    }
+  }
+}
