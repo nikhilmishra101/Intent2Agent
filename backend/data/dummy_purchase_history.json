@@ -1,0 +1,49 @@
+{
+  "demo_user_001": [
+    {
+      "product_name": "Adidas Running Shoes",
+      "category": "shoes",
+      "brand": "Adidas",
+      "amount_paise": 349900,
+      "merchant": "Amazon",
+      "payment_method": "HDFC_CREDIT_CARD",
+      "date": "2024-12-15"
+    },
+    {
+      "product_name": "Nike Air Max",
+      "category": "shoes",
+      "brand": "Nike",
+      "amount_paise": 599900,
+      "merchant": "Myntra",
+      "payment_method": "UPI",
+      "date": "2024-11-20"
+    },
+    {
+      "product_name": "Sony WH-1000XM4",
+      "category": "headphones",
+      "brand": "Sony",
+      "amount_paise": 2499900,
+      "merchant": "Amazon",
+      "payment_method": "HDFC_CREDIT_CARD",
+      "date": "2024-10-05"
+    },
+    {
+      "product_name": "boAt Rockerz 450",
+      "category": "headphones",
+      "brand": "boAt",
+      "amount_paise": 139900,
+      "merchant": "Flipkart",
+      "payment_method": "WALLET",
+      "date": "2024-09-18"
+    },
+    {
+      "product_name": "Adidas Ultraboost",
+      "category": "shoes",
+      "brand": "Adidas",
+      "amount_paise": 899900,
+      "merchant": "Adidas Official",
+      "payment_method": "HDFC_CREDIT_CARD",
+      "date": "2024-08-30"
+    }
+  ]
+}

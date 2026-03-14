@@ -1,0 +1,28 @@
+{
+  "demo_user_001": [
+    {
+      "card_id": "card_001",
+      "bank": "HDFC",
+      "card_type": "CREDIT",
+      "last_four": "4242",
+      "usage_count": 47,
+      "preferred": true
+    },
+    {
+      "card_id": "card_002",
+      "bank": "ICICI",
+      "card_type": "CREDIT",
+      "last_four": "1234",
+      "usage_count": 12,
+      "preferred": false
+    },
+    {
+      "card_id": "card_003",
+      "bank": "SBI",
+      "card_type": "DEBIT",
+      "last_four": "9876",
+      "usage_count": 8,
+      "preferred": false
+    }
+  ]
+}

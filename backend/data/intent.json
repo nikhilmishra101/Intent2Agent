@@ -1,0 +1,11 @@
+{
+  "product_type": "headphones",
+  "budget_paise": 300000,
+  "preference": "best_value",
+  "filters": {
+    "discount": false,
+    "offers": false,
+    "trending": false
+  },
+  "raw_query": "Buy headphones under \u20b93000"
+}

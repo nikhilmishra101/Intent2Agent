@@ -1,0 +1,13 @@
+{
+  "demo_user_001": {
+    "user_id": "demo_user_001",
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "preferred_brands": {
+      "shoes": ["Adidas", "Nike"],
+      "headphones": ["Sony", "boAt"],
+      "laptop": ["Dell", "Lenovo"]
+    },
+    "preferred_merchants": ["Amazon", "Flipkart", "Myntra"]
+  }
+}
