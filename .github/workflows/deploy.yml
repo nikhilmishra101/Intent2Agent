@@ -68,17 +68,12 @@ jobs:
       - name: Create or Update AWS Lambda Function
         env:
           IMAGE_URI: ${{ steps.build-image.outputs.image_uri }}
-          LAMBDA_ROLE_ARN: ${{ secrets.LAMBDA_ROLE_ARN }} # MUST BE SET IN GITHUB SECRETS
+          LAMBDA_ROLE_ARN: arn:aws:iam::339712787014:role/LambdaTrigger
         run: |
           # Check if the Lambda function already exists
           if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_NAME }} --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
             echo "Lambda function ${{ env.LAMBDA_FUNCTION_NAME }} not found. Creating..."
             
-            if [ -z "$LAMBDA_ROLE_ARN" ]; then
-              echo "Error: LAMBDA_ROLE_ARN secret is missing. Cannot create new Lambda function without an Execution Role."
-              exit 1
-            fi
-
             aws lambda create-function \
               --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
               --package-type Image \
